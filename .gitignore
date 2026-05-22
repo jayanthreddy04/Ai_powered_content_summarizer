@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Secrets — NEVER commit real API keys
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.production.local
+*.pem
+*.key
+credentials.json
+secrets.json
+
+# Keep example templates (placeholders only)
+!.env.example
+!**/.env.example
+
+# Build output
+dist/
+build/
+client/dist/
+
+# Logs & OS
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# IDE & deploy
+.idea/
+.vscode/
+.vercel/
+*.swp
+*.swo
+
+# Uploads
+server/uploads/
+
+# Test / cache
+coverage/
+.cache/

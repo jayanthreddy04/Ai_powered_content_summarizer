@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: content-summarizer-api
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5001
+      - key: GROQ_API_KEY
+        sync: false
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: PINECONE_INDEX_NAME
+        value: content-summarizer
+      - key: CLIENT_URL
+        sync: false
