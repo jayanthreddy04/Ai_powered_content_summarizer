@@ -43,7 +43,11 @@ app.use(
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Local dev + standard: /api/* — Vercel serverless may also pass /summarize/* without /api prefix
 app.use('/api', apiLimiter, apiRoutes);
+if (config.isVercel) {
+  app.use(apiLimiter, apiRoutes);
+}
 
 app.use(notFoundHandler);
 

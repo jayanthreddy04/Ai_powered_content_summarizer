@@ -1,7 +1,4 @@
 /**
- * Vercel catch-all entry for /api/* routes.
- *
- * Keep this separate from api/index.js so both /api and nested API paths
- * resolve to the same Express app without flattening the request URL.
+ * Catch-all for /api/* (e.g. /api/summarize/text)
  */
 export { config, default } from './index.js';

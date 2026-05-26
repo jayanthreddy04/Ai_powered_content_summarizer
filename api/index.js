@@ -1,5 +1,5 @@
 /**
- * Vercel serverless entry — mounts the Express API at /api/*
+ * Vercel serverless entry — Express API
  */
 import '../server/src/config/langsmith.js';
 import app from '../server/src/app.js';
