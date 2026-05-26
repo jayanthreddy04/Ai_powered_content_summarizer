@@ -38,8 +38,7 @@ router.post(
   summarizeUrlHandler
 );
 
-router.post(
-  '/file',
+const pdfUploadHandlers = [
   uploadPdf.single('file'),
   [
     body('summaryType')
@@ -49,7 +48,11 @@ router.post(
     body('length').optional().isIn(['short', 'medium', 'long']).withMessage('Invalid length'),
   ],
   validate,
-  summarizeFileHandler
-);
+  summarizeFileHandler,
+];
+
+// /pdf preferred on Vercel (some deployments 404 on path segment "file")
+router.post('/pdf', ...pdfUploadHandlers);
+router.post('/file', ...pdfUploadHandlers);
 
 export default router;

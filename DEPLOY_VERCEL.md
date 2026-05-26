@@ -73,7 +73,24 @@ Click **Deploy**. After build:
 ## 6. Verify
 
 ```bash
+# Health check (GET)
 curl https://your-project.vercel.app/api/health
+
+# Summarize test (POST) — should return JSON, not 405
+curl -X POST https://your-project.vercel.app/api/summarize/text \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello world test","summaryType":"short","length":"short"}'
+```
+
+If you get **405 Method Not Allowed**, redeploy after pulling the latest `vercel.json` (API routes must not be rewritten to `index.html`).
+
+If PDF upload returns **404**, the app uses `/api/summarize/pdf` (not `/file`). Test with:
+
+```bash
+curl -X POST https://your-app.vercel.app/api/summarize/pdf \
+  -F "file=@./sample.pdf" \
+  -F "summaryType=short" \
+  -F "length=medium"
 ```
 
 Open the site and run a **Text** summary first (fastest). Then try PDF/URL.

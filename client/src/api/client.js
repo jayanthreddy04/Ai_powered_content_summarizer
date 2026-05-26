@@ -43,7 +43,7 @@ export const summarizeText = (payload) => api.post('/summarize/text', payload);
 
 export const summarizeUrl = (payload) => api.post('/summarize/url', payload);
 
-export const summarizeFile = (formData) => api.post('/summarize/file', formData);
+export const summarizeFile = (formData) => api.post('/summarize/pdf', formData);
 
 export const getHistory = (limit = 50) => api.get('/history', { params: { limit } });
 

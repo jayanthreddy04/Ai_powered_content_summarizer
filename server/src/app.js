@@ -5,6 +5,7 @@ import multer from 'multer';
 import config from './config/index.js';
 import apiRoutes from './routes/index.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
+import { vercelPathNormalizer } from './middleware/vercelPath.js';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
 import { AppError } from './utils/apiResponse.js';
 
@@ -18,19 +19,8 @@ app.use(
 
 const corsOrigin = config.isVercel
   ? (origin, callback) => {
-      // Same-origin on Vercel; allow preview/production URLs and local dev
       if (!origin) return callback(null, true);
-      const allowed = [
-        config.clientUrl,
-        process.env.FRONTEND_URL,
-        process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
-        process.env.VERCEL_BRANCH_URL && `https://${process.env.VERCEL_BRANCH_URL}`,
-        'http://localhost:5173',
-      ].filter(Boolean);
-      if (allowed.some((o) => origin === o || origin.startsWith(o.replace(/\/$/, '')))) {
-        return callback(null, true);
-      }
-      callback(null, true); // public API — rate-limited
+      callback(null, true);
     }
   : config.clientUrl;
 
@@ -43,10 +33,11 @@ app.use(
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Local dev + standard: /api/* — Vercel serverless may also pass /summarize/* without /api prefix
-app.use('/api', apiLimiter, apiRoutes);
 if (config.isVercel) {
+  app.use(vercelPathNormalizer);
   app.use(apiLimiter, apiRoutes);
+} else {
+  app.use('/api', apiLimiter, apiRoutes);
 }
 
 app.use(notFoundHandler);

@@ -19,6 +19,7 @@
     "@langchain/groq": "^0.2.2",
     "@langchain/pinecone": "^0.2.0",
     "@pinecone-database/pinecone": "^5.1.0",
+    "@vercel/node": "^5.8.4",
     "axios": "^1.7.9",
     "cheerio": "^1.0.0",
     "cors": "^2.8.5",
