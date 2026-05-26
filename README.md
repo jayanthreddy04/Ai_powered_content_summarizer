@@ -50,6 +50,7 @@ Ai_powered_content_summarizer/
 - **Node.js** 18+
 - **Groq API key** — [console.groq.com](https://console.groq.com)
 - **Pinecone API key** — [app.pinecone.io](https://app.pinecone.io)
+- **LangSmith API key** — [smith.langchain.com](https://smith.langchain.com) (optional, for tracing)
 - Pinecone index with **1024 dimensions** (for `multilingual-e5-large`)
 
 ## Security (before GitHub push)
@@ -118,6 +119,10 @@ Open [http://localhost:5173](http://localhost:5173). The Vite dev server proxies
 | `PINECONE_API_KEY` | Pinecone API key |
 | `PINECONE_INDEX_NAME` | Index name (default `content-summarizer`) |
 | `PINECONE_EMBED_MODEL` | Embedding model (default `multilingual-e5-large`) |
+| `LANGSMITH_TRACING` | Set to `true` to send traces to LangSmith |
+| `LANGSMITH_ENDPOINT` | LangSmith endpoint, usually `https://api.smith.langchain.com` |
+| `LANGSMITH_API_KEY` | LangSmith API key |
+| `LANGSMITH_PROJECT` | LangSmith project name, e.g. `content_summarizer` |
 
 ### Client (`client/.env`)
 
@@ -254,7 +259,24 @@ Quick steps:
 
 - [ ] Pinecone index created (`cd server && npm run create-index`)
 - [ ] `GROQ_API_KEY` and `PINECONE_API_KEY` set in Vercel (or Render)
+- [ ] LangSmith env vars set if tracing is enabled: `LANGSMITH_TRACING`, `LANGSMITH_ENDPOINT`, `LANGSMITH_API_KEY`, `LANGSMITH_PROJECT`
 - [ ] `curl https://your-app.vercel.app/api/health` returns success
+
+## LangSmith Tracing
+
+Full setup guide: **[LANGSMITH.md](./LANGSMITH.md)**
+
+Quick start:
+
+```bash
+cd server
+cp .env.example .env
+# Add LANGSMITH_API_KEY from https://smith.langchain.com/settings
+npm run trace:test   # verify connection
+npm run dev
+```
+
+Then summarize content in the app and view runs at [smith.langchain.com](https://smith.langchain.com).
 
 ## Production Best Practices
 

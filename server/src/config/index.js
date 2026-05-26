@@ -16,6 +16,9 @@ const readEnv = (key) => {
 const config = {
   port: parseInt(process.env.PORT || '5001', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
+  host:
+    process.env.HOST ||
+    (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1'),
   clientUrl:
     process.env.CLIENT_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5173'),
@@ -29,6 +32,12 @@ const config = {
     indexName: process.env.PINECONE_INDEX_NAME || 'content-summarizer',
     embedModel: process.env.PINECONE_EMBED_MODEL || 'multilingual-e5-large',
     dimension: 1024,
+  },
+  langsmith: {
+    tracing: process.env.LANGSMITH_TRACING === 'true' || process.env.LANGCHAIN_TRACING_V2 === 'true',
+    apiKey: readEnv('LANGSMITH_API_KEY') || readEnv('LANGCHAIN_API_KEY'),
+    project: process.env.LANGSMITH_PROJECT || process.env.LANGCHAIN_PROJECT || 'content_summarizer',
+    endpoint: process.env.LANGSMITH_ENDPOINT || process.env.LANGCHAIN_ENDPOINT || 'https://api.smith.langchain.com',
   },
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),

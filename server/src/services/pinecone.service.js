@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import config from '../config/index.js';
 import { AppError } from '../utils/apiResponse.js';
 import { embedTexts, embedQuery } from './embedding.service.js';
+import { traceOperation } from '../utils/tracing.js';
 
 let index = null;
 
@@ -17,7 +18,7 @@ const getIndex = () => {
   return index;
 };
 
-export const storeSummaryRecord = async ({
+export const storeSummaryRecord = traceOperation('store_summary_record', async ({
   sourceType,
   source,
   title,
@@ -85,9 +86,29 @@ export const storeSummaryRecord = async ({
   }
 
   return { id, createdAt, metadata };
-};
+}, {
+  run_type: 'tool',
+  tags: ['pinecone', 'storage'],
+  metadata: {
+    index: config.pinecone.indexName,
+  },
+  processInputs: (input = {}) => ({
+    sourceType: input.sourceType,
+    sourceLength: String(input.source || '').length,
+    title: input.title,
+    originalContentLength: String(input.originalContent || '').length,
+    summaryType: input.summaryType,
+    length: input.length,
+    tokenEstimate: input.tokenEstimate,
+    summaryKeys: Object.keys(input.summaries || {}),
+  }),
+  processOutputs: (outputs) => ({
+    id: outputs.id,
+    createdAt: outputs.createdAt,
+  }),
+});
 
-export const semanticSearch = async (query, topK = 10) => {
+export const semanticSearch = traceOperation('semantic_search', async (query, topK = 10) => {
   const queryVector = await embedQuery(query);
   const idx = getIndex();
 
@@ -131,7 +152,21 @@ export const semanticSearch = async (query, topK = 10) => {
   }
 
   return items;
-};
+}, {
+  run_type: 'retriever',
+  tags: ['pinecone', 'search'],
+  metadata: {
+    index: config.pinecone.indexName,
+  },
+  processInputs: ({ args = [] }) => ({
+    queryLength: String(args[0] || '').length,
+    topK: args[1] || 10,
+  }),
+  processOutputs: (outputs) => ({
+    count: outputs.outputs?.length || 0,
+    ids: (outputs.outputs || []).map((item) => item.id),
+  }),
+});
 
 export const listHistory = async (limit = 50) => {
   const idx = getIndex();

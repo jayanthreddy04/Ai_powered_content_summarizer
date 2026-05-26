@@ -193,12 +193,14 @@ export default function PdfSummarizer() {
           <div>
             <p className="font-medium">Summarization failed</p>
             <p className="mt-1">{error}</p>
-            <p className="mt-2 text-red-600 dark:text-red-300">
-              Ensure the backend is running:{' '}
-              <code className="rounded bg-red-100 px-1 dark:bg-red-900">
-                cd server && npm run dev
-              </code>
-            </p>
+            {!error.toLowerCase().includes('groq') && (
+              <p className="mt-2 text-red-600 dark:text-red-300">
+                Ensure the backend is running:{' '}
+                <code className="rounded bg-red-100 px-1 dark:bg-red-900">
+                  cd server && npm run dev
+                </code>
+              </p>
+            )}
           </div>
         </div>
       )}

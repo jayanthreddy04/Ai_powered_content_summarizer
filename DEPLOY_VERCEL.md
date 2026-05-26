@@ -7,7 +7,8 @@ This project deploys as a **single Vercel app**: React frontend (`client/dist`) 
 1. [Vercel account](https://vercel.com)
 2. [Groq API key](https://console.groq.com/keys)
 3. [Pinecone API key](https://app.pinecone.io) + index created
-4. **Vercel Pro** (recommended) — summarization needs up to **60s** (`maxDuration: 60`). Hobby plan limits functions to **10s**.
+4. [LangSmith API key](https://smith.langchain.com) (optional, for tracing)
+5. **Vercel Pro** (recommended) — summarization needs up to **60s** (`maxDuration: 60`). Hobby plan limits functions to **10s**.
 
 ## 1. Create Pinecone index (one time)
 
@@ -52,6 +53,10 @@ In **Vercel → Project → Settings → Environment Variables**, add:
 | `PINECONE_INDEX_NAME` | Yes | `content-summarizer` |
 | `GROQ_MODEL` | No | `llama-3.3-70b-versatile` |
 | `PINECONE_EMBED_MODEL` | No | `multilingual-e5-large` |
+| `LANGSMITH_TRACING` | No | `true` |
+| `LANGSMITH_ENDPOINT` | No | `https://api.smith.langchain.com` |
+| `LANGSMITH_API_KEY` | If tracing | `lsv2_...` |
+| `LANGSMITH_PROJECT` | If tracing | `content_summarizer` |
 | `NODE_ENV` | No | `production` |
 
 Apply to **Production**, **Preview**, and **Development**.
@@ -91,6 +96,7 @@ Open the site and run a **Text** summary first (fastest). Then try PDF/URL.
 | Function timeout | Upgrade to Vercel Pro (60s) or use shorter content |
 | `Groq API key is not configured` | Add `GROQ_API_KEY` in Vercel env vars, redeploy |
 | `Pinecone index not found` | Run `npm run create-index` locally with same `PINECONE_INDEX_NAME` |
+| No LangSmith traces | Confirm `LANGSMITH_TRACING=true`, `LANGSMITH_API_KEY`, and `LANGSMITH_PROJECT`, then redeploy |
 | 404 on page refresh | `vercel.json` SPA rewrite is included |
 | PDF fails on Vercel | File must be &lt; 4.5MB; use text-based PDFs |
 

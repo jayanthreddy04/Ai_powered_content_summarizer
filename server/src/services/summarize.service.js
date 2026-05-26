@@ -5,6 +5,7 @@ import { storeSummaryRecord } from './pinecone.service.js';
 import { estimateTokens, estimateSummaryTokens } from '../utils/tokenEstimator.js';
 import { AppError } from '../utils/apiResponse.js';
 import config from '../config/index.js';
+import { summarizeOutputs, summarizeTextInput, traceOperation } from '../utils/tracing.js';
 
 const persistSummary = async (record) => {
   try {
@@ -38,7 +39,7 @@ const normalizeOptions = (options = {}) => {
   };
 };
 
-export const summarizeText = async (text, options = {}) => {
+export const summarizeText = traceOperation('summarize_text', async (text, options = {}) => {
   const trimmed = (text || '').trim();
   if (!trimmed) throw new AppError('Text content is required', 400);
   if (trimmed.length > config.limits.maxTextLength) {
@@ -46,7 +47,7 @@ export const summarizeText = async (text, options = {}) => {
   }
 
   const opts = normalizeOptions(options);
-  const summaries = await generateSummaries(trimmed, opts);
+  const summaries = await generateSummaries(trimmed, { ...opts, sourceType: 'text' });
   const inputTokens = estimateTokens(trimmed);
   const outputTokens = estimateSummaryTokens(summaries);
 
@@ -72,12 +73,28 @@ export const summarizeText = async (text, options = {}) => {
     length: opts.length,
     tokenEstimate: { input: inputTokens, output: outputTokens, total: inputTokens + outputTokens },
   };
-};
+}, {
+  tags: ['summarize', 'text'],
+  processInputs: ({ args = [] }) => ({
+    text: summarizeTextInput(args[0]),
+    options: args[1] || {},
+  }),
+  processOutputs: (outputs) => ({
+    id: outputs.id,
+    sourceType: outputs.sourceType,
+    summaryType: outputs.summaryType,
+    length: outputs.length,
+    summaries: summarizeOutputs(outputs.summaries),
+    tokenEstimate: outputs.tokenEstimate,
+    stored: Boolean(outputs.id),
+    storageWarning: outputs.storageWarning,
+  }),
+});
 
-export const summarizeUrl = async (url, options = {}) => {
+export const summarizeUrl = traceOperation('summarize_url', async (url, options = {}) => {
   const { title, content, url: fetchedUrl } = await scrapeWebpage(url);
   const opts = normalizeOptions(options);
-  const summaries = await generateSummaries(content, opts);
+  const summaries = await generateSummaries(content, { ...opts, sourceType: 'url' });
   const inputTokens = estimateTokens(content);
   const outputTokens = estimateSummaryTokens(summaries);
 
@@ -105,16 +122,34 @@ export const summarizeUrl = async (url, options = {}) => {
     length: opts.length,
     tokenEstimate: { input: inputTokens, output: outputTokens, total: inputTokens + outputTokens },
   };
-};
+}, {
+  tags: ['summarize', 'url'],
+  processInputs: ({ args = [] }) => ({
+    url: args[0],
+    options: args[1] || {},
+  }),
+  processOutputs: (outputs) => ({
+    id: outputs.id,
+    sourceType: outputs.sourceType,
+    source: outputs.source,
+    title: outputs.title,
+    summaryType: outputs.summaryType,
+    length: outputs.length,
+    summaries: summarizeOutputs(outputs.summaries),
+    tokenEstimate: outputs.tokenEstimate,
+    stored: Boolean(outputs.id),
+    storageWarning: outputs.storageWarning,
+  }),
+});
 
-export const summarizePdf = async (file, options = {}) => {
+export const summarizePdf = traceOperation('summarize_pdf', async (file, options = {}) => {
   if (!file) throw new AppError('PDF file is required', 400);
 
   console.log('[PDF] Extracting text from', file.originalname);
   const { title, content, pageCount } = await extractTextFromPdf(file.buffer, file.originalname);
   console.log('[PDF] Extracted', content.length, 'chars from', pageCount, 'pages');
   const opts = normalizeOptions(options);
-  const summaries = await generateSummaries(content, opts);
+  const summaries = await generateSummaries(content, { ...opts, sourceType: 'pdf' });
   const inputTokens = estimateTokens(content);
   const outputTokens = estimateSummaryTokens(summaries);
 
@@ -143,4 +178,30 @@ export const summarizePdf = async (file, options = {}) => {
     length: opts.length,
     tokenEstimate: { input: inputTokens, output: outputTokens, total: inputTokens + outputTokens },
   };
-};
+}, {
+  tags: ['summarize', 'pdf'],
+  processInputs: ({ args = [] }) => {
+    const file = args[0] || {};
+    return {
+      file: {
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+      },
+      options: args[1] || {},
+    };
+  },
+  processOutputs: (outputs) => ({
+    id: outputs.id,
+    sourceType: outputs.sourceType,
+    source: outputs.source,
+    title: outputs.title,
+    pageCount: outputs.pageCount,
+    summaryType: outputs.summaryType,
+    length: outputs.length,
+    summaries: summarizeOutputs(outputs.summaries),
+    tokenEstimate: outputs.tokenEstimate,
+    stored: Boolean(outputs.id),
+    storageWarning: outputs.storageWarning,
+  }),
+});

@@ -6,8 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "create-index": "node scripts/create-index.js"
+    "dev": "node src/index.js",
+    "create-index": "node scripts/create-index.js",
+    "trace:test": "node scripts/test-langsmith-trace.js"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -25,6 +26,7 @@
     "express-rate-limit": "^7.5.0",
     "express-validator": "^7.2.1",
     "helmet": "^8.0.0",
+    "langsmith": "^0.3.67",
     "multer": "^1.4.5-lts.1",
     "pdf-parse": "^1.1.1",
     "uuid": "^11.0.5"

@@ -2,6 +2,7 @@ import { ChatGroq } from '@langchain/groq';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import config from '../config/index.js';
 import { AppError } from '../utils/apiResponse.js';
+import { llmInvokeConfig, summarizeOutputs, traceOperation } from '../utils/tracing.js';
 
 const LENGTH_GUIDE = {
   short: 'Keep the response very concise (2-4 sentences or 3-5 bullet points max).',
@@ -42,7 +43,23 @@ const truncateContent = (content, maxChars = 28000) => {
   return content.slice(0, maxChars) + '\n\n[Content truncated for processing...]';
 };
 
-export const generateSummaries = async (content, { length = 'medium', types = ['short'] } = {}) => {
+const toGroqAppError = (error) => {
+  const status = error.status || error.statusCode || error.response?.status;
+  const message = error.message || '';
+
+  if (status === 401 || message.toLowerCase().includes('invalid api key')) {
+    return new AppError(
+      'Groq API key is invalid. Update GROQ_API_KEY in server/.env, then restart the backend.',
+      503
+    );
+  }
+
+  return new AppError(`Groq summary generation failed: ${message || 'Unknown error'}`, 503);
+};
+
+export const generateSummaries = traceOperation(
+  'generate_summaries',
+  async (content, { length = 'medium', types = ['short'], sourceType = 'unknown' } = {}) => {
   const model = getModel();
   const trimmed = truncateContent(content);
   const lengthGuide = LENGTH_GUIDE[length] || LENGTH_GUIDE.medium;
@@ -60,11 +77,23 @@ export const generateSummaries = async (content, { length = 'medium', types = ['
       ),
       new HumanMessage(`Summarize the following content:\n\n${trimmed}`),
     ];
-    const response = await model.invoke(messages);
-    summaries[type] =
-      typeof response.content === 'string'
-        ? response.content.trim()
-        : String(response.content).trim();
+    try {
+      const response = await model.invoke(
+        messages,
+        llmInvokeConfig({
+          summaryType: type,
+          length,
+          sourceType,
+          model: config.groq.model,
+        })
+      );
+      summaries[type] =
+        typeof response.content === 'string'
+          ? response.content.trim()
+          : String(response.content).trim();
+    } catch (error) {
+      throw toGroqAppError(error);
+    }
     console.log(`[Groq] ${type} done in ${Date.now() - started}ms`);
   };
 
@@ -78,7 +107,26 @@ export const generateSummaries = async (content, { length = 'medium', types = ['
   }
 
   return summaries;
-};
+},
+  {
+    tags: ['groq', 'llm'],
+    metadata: {
+      provider: 'groq',
+      model: config.groq.model,
+    },
+    processInputs: ({ args = [] }) => ({
+      contentLength: String(args[0] || '').length,
+      options: {
+        length: args[1]?.length,
+        types: args[1]?.types,
+        sourceType: args[1]?.sourceType,
+      },
+    }),
+    processOutputs: (outputs) => ({
+      summaries: summarizeOutputs(outputs),
+    }),
+  }
+);
 
 export const generateSingleSummary = async (content, { summaryType = 'short', length = 'medium' } = {}) => {
   const all = await generateSummaries(content, { length, types: [summaryType] });

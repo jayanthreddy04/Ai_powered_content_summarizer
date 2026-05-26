@@ -10,7 +10,7 @@ echo "Checking for exposed secrets..."
 FAIL=0
 
 # Block real keys in tracked files (Groq / Pinecone patterns)
-if git grep -E 'gsk_[a-zA-Z0-9]{20,}|pcsk_[a-zA-Z0-9]{20,}' -- ':!*.md' ':!scripts/check-secrets.sh' 2>/dev/null; then
+if git grep -E 'gsk_[a-zA-Z0-9]{20,}|pcsk_[a-zA-Z0-9]{20,}|lsv2_[a-zA-Z0-9]{20,}' -- ':!*.md' ':!scripts/check-secrets.sh' ':!LANGSMITH.md' 2>/dev/null; then
   echo "ERROR: Possible API keys found in tracked files (see above)."
   FAIL=1
 fi
@@ -25,7 +25,7 @@ done
 
 # Warn if .env.example contains non-placeholder keys
 for f in .env.example server/.env.example client/.env.example; do
-  if [[ -f "$f" ]] && grep -qE 'GROQ_API_KEY=gsk_|PINECONE_API_KEY=pcsk_' "$f" 2>/dev/null; then
+  if [[ -f "$f" ]] && grep -qE 'GROQ_API_KEY=gsk_|PINECONE_API_KEY=pcsk_|LANGSMITH_API_KEY=lsv2_' "$f" 2>/dev/null; then
     echo "ERROR: $f contains real API keys — use your_groq_api_key_here placeholders only."
     FAIL=1
   fi

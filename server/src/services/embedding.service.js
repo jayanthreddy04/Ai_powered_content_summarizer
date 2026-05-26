@@ -1,6 +1,7 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import config from '../config/index.js';
 import { AppError } from '../utils/apiResponse.js';
+import { traceOperation } from '../utils/tracing.js';
 
 let pineconeClient = null;
 
@@ -14,7 +15,7 @@ const getClient = () => {
   return pineconeClient;
 };
 
-export const embedTexts = async (texts) => {
+export const embedTexts = traceOperation('embed_texts', async (texts) => {
   const pc = getClient();
   const inputs = Array.isArray(texts) ? texts : [texts];
 
@@ -33,9 +34,28 @@ export const embedTexts = async (texts) => {
       503
     );
   }
-};
+}, {
+  run_type: 'embedding',
+  tags: ['pinecone', 'embedding'],
+  metadata: {
+    provider: 'pinecone',
+    model: config.pinecone.embedModel,
+  },
+  processInputs: ({ input }) => {
+    const inputs = Array.isArray(input) ? input : [input];
+    return {
+      count: inputs.length,
+      lengths: inputs.map((text) => String(text || '').length),
+      inputType: 'passage',
+    };
+  },
+  processOutputs: (outputs) => ({
+    count: outputs?.outputs?.length || 0,
+    dimensions: outputs?.outputs?.[0]?.length || 0,
+  }),
+});
 
-export const embedQuery = async (query) => {
+export const embedQuery = traceOperation('embed_query', async (query) => {
   const pc = getClient();
   try {
     const response = await pc.inference.embed(
@@ -51,4 +71,18 @@ export const embedQuery = async (query) => {
       503
     );
   }
-};
+}, {
+  run_type: 'embedding',
+  tags: ['pinecone', 'embedding', 'search'],
+  metadata: {
+    provider: 'pinecone',
+    model: config.pinecone.embedModel,
+  },
+  processInputs: ({ input }) => ({
+    queryLength: String(input || '').length,
+    inputType: 'query',
+  }),
+  processOutputs: (outputs) => ({
+    dimensions: outputs?.outputs?.length || 0,
+  }),
+});
